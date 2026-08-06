@@ -560,11 +560,11 @@ button:focus-visible,
 }
 
 .is-exploded .monitor-layer {
-  transform: translate(-50%, -50%) translate3d(var(--layer-shift), 0, var(--layer-z-deep));
+  transform: translate(-50%, -50%) translate3d(0, 0, var(--layer-z-deep));
 }
 
 .is-exploded .monitor-layer.selected {
-  transform: translate(-50%, -50%) translate3d(var(--layer-shift), 0, var(--layer-z-deep)) scale(1.035);
+  transform: translate(-50%, -50%) translate3d(0, 0, var(--layer-z-deep)) scale(1.035);
 }
 
 .monitor-layer:hover,
@@ -1538,11 +1538,11 @@ button:focus-visible,
   }
 
   .is-exploded .monitor-layer {
-    transform: translate(-50%, -50%) translate3d(var(--layer-mobile-shift), 0, var(--layer-z-deep));
+    transform: translate(-50%, -50%) translate3d(0, 0, var(--layer-z-deep));
   }
 
   .is-exploded .monitor-layer.selected {
-    transform: translate(-50%, -50%) translate3d(var(--layer-mobile-shift), 0, var(--layer-z-deep)) scale(1.025);
+    transform: translate(-50%, -50%) translate3d(0, 0, var(--layer-z-deep)) scale(1.025);
   }
 
   .layer-tag {

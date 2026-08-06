@@ -98,13 +98,13 @@ const layerFacts: Record<LayerId, { builtFrom: string; inspect: string }> = {
   housing: { builtFrom: "Metal chassis, power supply and rear shell", inspect: "Cooling, rigidity, ports and serviceability" },
 };
 
-const layers: Array<{ id: LayerId; label: string; depth: number; shift: number }> = [
-  { id: "housing", label: "Rear shell", depth: -82, shift: -176 },
-  { id: "electronics", label: "Drivers", depth: -64, shift: -116 },
-  { id: "backlight", label: "Backlight", depth: -46, shift: -55 },
-  { id: "diffuser", label: "Optics", depth: -28, shift: 5 },
-  { id: "pixels", label: "Pixels", depth: -10, shift: 67 },
-  { id: "glass", label: "Glass", depth: 10, shift: 128 },
+const layers: Array<{ id: LayerId; label: string; plane: number }> = [
+  { id: "housing", label: "Rear shell", plane: -2.5 },
+  { id: "electronics", label: "Drivers", plane: -1.5 },
+  { id: "backlight", label: "Backlight", plane: -0.5 },
+  { id: "diffuser", label: "Optics", plane: 0.5 },
+  { id: "pixels", label: "Pixels", plane: 1.5 },
+  { id: "glass", label: "Glass", plane: 2.5 },
 ];
 
 const format = (value: number) => new Intl.NumberFormat("en-GB", { maximumFractionDigits: 1 }).format(value);
@@ -116,8 +116,8 @@ export default function Home() {
   const [refresh, setRefresh] = useState<RefreshKey>(144);
   const [exploded, setExploded] = useState(true);
   const [selectedLayer, setSelectedLayer] = useState<LayerId>("backlight");
-  const [rotation, setRotation] = useState({ x: -5, y: -18 });
-  const [separation, setSeparation] = useState(135);
+  const [rotation, setRotation] = useState({ x: -7, y: -32 });
+  const [separation, setSeparation] = useState(85);
   const [powered, setPowered] = useState(true);
   const [renderMode, setRenderMode] = useState<RenderKey>("scene");
   const drag = useRef<{ x: number; y: number; rx: number; ry: number } | null>(null);
@@ -145,7 +145,7 @@ export default function Home() {
   const chooseLayer = (id: LayerId) => {
     setSelectedLayer(id);
     setExploded(true);
-    setSeparation((current) => Math.max(current, 145));
+    setSeparation((current) => Math.max(current, 95));
   };
 
   const onPointerDown = (event: PointerEvent<HTMLDivElement>) => {
@@ -248,13 +248,13 @@ export default function Home() {
           <div className="visualizer-toolbar">
             <div className="model-title"><span>02</span><div><strong>Modern display assembly</strong><small>Drag anywhere to orbit · select a layer to inspect</small></div></div>
             <label className="spread-control">
-              <span>Layer spacing</span>
-              <input type="range" min="70" max="190" step="5" value={separation} onChange={(event) => { setSeparation(Number(event.target.value)); setExploded(true); }} aria-label="Layer separation" />
-              <b>{separation}%</b>
+              <span>Z-axis depth</span>
+              <input type="range" min="30" max="140" step="5" value={separation} onChange={(event) => { setSeparation(Number(event.target.value)); setExploded(true); }} aria-label="Layer depth separation along the Z axis" />
+              <b>{separation}px</b>
             </label>
             <div className="view-actions">
               <button type="button" className={exploded ? "active" : ""} onClick={() => setExploded((value) => !value)} aria-pressed={exploded}>{exploded ? "Assemble" : "Explode"}</button>
-              <button type="button" onClick={() => setRotation({ x: -5, y: -18 })}>Reset view</button>
+              <button type="button" onClick={() => setRotation({ x: -7, y: -32 })}>Reset view</button>
             </div>
           </div>
 
@@ -280,12 +280,9 @@ export default function Home() {
               <div className="stand" aria-hidden="true"><span /><i /></div>
               {layers.map((layer) => {
                 const absent = panel === "OLED" && (layer.id === "backlight" || layer.id === "diffuser");
-                const spread = exploded ? separation / 100 : 0;
                 const layerStyle = {
-                  "--layer-z": `${layer.depth}px`,
-                  "--layer-z-deep": `${layer.depth * (1 + spread * 0.85)}px`,
-                  "--layer-shift": `${layer.shift * spread}px`,
-                  "--layer-mobile-shift": `${layer.shift * spread * 0.48}px`,
+                  "--layer-z": `${layer.plane * 7}px`,
+                  "--layer-z-deep": `${layer.plane * separation}px`,
                 } as CSSProperties;
                 return (
                   <button
