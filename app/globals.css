@@ -1330,6 +1330,207 @@ button:focus-visible,
   opacity: 0.7;
 }
 
+/* Full-viewport composition: the 3D scene is the page, everything else floats above it. */
+.lab-app {
+  min-height: 660px;
+  padding: 0;
+  display: block;
+}
+
+.app-bar {
+  position: absolute;
+  z-index: 40;
+  top: 10px;
+  right: 10px;
+  left: 10px;
+  height: 58px;
+}
+
+.header-actions {
+  justify-self: end;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.focus-control {
+  min-height: 38px;
+  padding: 5px 10px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.025);
+  color: var(--muted);
+  cursor: pointer;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.56rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  transition: border-color 0.18s ease, background 0.18s ease, color 0.18s ease;
+}
+
+.focus-control span {
+  color: var(--cyan);
+  font-size: 0.9rem;
+  line-height: 1;
+}
+
+.focus-control:hover,
+.focus-control.active {
+  border-color: rgba(103, 232, 249, 0.45);
+  background: var(--cyan-soft);
+  color: var(--ink);
+}
+
+.workspace {
+  position: absolute;
+  z-index: 2;
+  inset: 0;
+  display: block;
+}
+
+.visualizer {
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  display: block;
+  overflow: hidden;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
+.visualizer-toolbar {
+  position: absolute;
+  z-index: 28;
+  top: 78px;
+  left: 50%;
+  width: min(620px, calc(100% - 590px));
+  min-width: 400px;
+  height: 48px;
+  transform: translateX(-50%);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: rgba(10, 16, 35, 0.8);
+  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.18);
+  backdrop-filter: blur(20px) saturate(125%);
+}
+
+.scene {
+  position: absolute;
+  inset: 0;
+}
+
+.spec-dock,
+.layer-dock {
+  position: absolute;
+  z-index: 24;
+  top: 78px;
+  bottom: 116px;
+  width: clamp(214px, 16vw, 252px);
+  transition: opacity 0.25s ease, transform 0.25s ease;
+}
+
+.spec-dock {
+  left: 10px;
+}
+
+.layer-dock {
+  right: 10px;
+  width: clamp(250px, 19vw, 300px);
+}
+
+.signal-rail {
+  position: absolute;
+  z-index: 24;
+  right: 10px;
+  bottom: 10px;
+  left: 10px;
+  height: 96px;
+  transition: opacity 0.25s ease, transform 0.25s ease;
+}
+
+.assembly {
+  top: 51%;
+  width: min(53vw, 780px);
+}
+
+.readout-size,
+.readout-light {
+  left: calc(clamp(214px, 16vw, 252px) + 26px);
+}
+
+.readout-density,
+.readout-time {
+  right: calc(clamp(250px, 19vw, 300px) + 26px);
+}
+
+.focus-mode .spec-dock,
+.focus-mode .layer-dock,
+.focus-mode .signal-rail {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.focus-mode .spec-dock { transform: translateX(-28px); }
+.focus-mode .layer-dock { transform: translateX(28px); }
+.focus-mode .signal-rail { transform: translateY(28px); }
+
+.focus-mode .app-bar {
+  left: auto;
+  width: auto;
+  padding: 0;
+  border-color: transparent;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
+.focus-mode .identity,
+.focus-mode .current-config,
+.focus-mode .power-control {
+  display: none;
+}
+
+.focus-mode .app-bar {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.focus-mode .visualizer-toolbar {
+  top: 10px;
+  left: 10px;
+  width: auto;
+  min-width: 480px;
+  transform: none;
+}
+
+.focus-mode .model-title {
+  display: none;
+}
+
+.focus-mode .assembly {
+  width: min(64vw, 980px);
+}
+
+.focus-mode .readout-size,
+.focus-mode .readout-light {
+  left: 4%;
+}
+
+.focus-mode .readout-density,
+.focus-mode .readout-time {
+  right: 4%;
+}
+
+.focus-mode .orbit-cue {
+  bottom: 26px;
+}
+
 @media (max-width: 1160px) {
   .current-config span {
     padding-inline: 9px;
@@ -1340,9 +1541,9 @@ button:focus-visible,
   }
 
   .readout-size,
-  .readout-light { left: 2%; }
+  .readout-light { left: calc(clamp(214px, 16vw, 252px) + 18px); }
   .readout-density,
-  .readout-time { right: 2%; }
+  .readout-time { right: calc(clamp(250px, 19vw, 300px) + 18px); }
 
   .layer-list button small {
     display: none;
@@ -1411,17 +1612,65 @@ button:focus-visible,
   .lab-app {
     height: auto;
     min-height: 100dvh;
+    padding: 6px;
+    display: grid;
     grid-template-rows: 58px auto auto;
+    gap: 6px;
     overflow: visible;
   }
 
+  .app-bar,
+  .focus-mode .app-bar {
+    position: relative;
+    inset: auto;
+    width: auto;
+    height: 58px;
+    padding: 0 16px;
+    display: grid;
+    border: 1px solid var(--line);
+    background: var(--panel);
+    box-shadow: var(--shadow);
+    backdrop-filter: blur(22px) saturate(125%);
+  }
+
   .workspace {
+    position: static;
+    inset: auto;
     display: contents;
   }
 
   .visualizer {
+    position: relative;
+    inset: auto;
     order: 1;
     min-height: 68dvh;
+    display: grid;
+    grid-template-rows: 65px minmax(0, 1fr);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    background: rgba(11, 18, 38, 0.7);
+    box-shadow: var(--shadow);
+    backdrop-filter: blur(22px) saturate(125%);
+  }
+
+  .visualizer-toolbar,
+  .focus-mode .visualizer-toolbar {
+    position: relative;
+    inset: auto;
+    width: auto;
+    min-width: 0;
+    height: auto;
+    transform: none;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+    backdrop-filter: none;
+  }
+
+  .scene {
+    position: relative;
+    inset: auto;
   }
 
   .spec-dock {
@@ -1434,8 +1683,45 @@ button:focus-visible,
 
   .spec-dock,
   .layer-dock {
+    position: relative;
+    inset: auto;
+    width: auto;
     min-height: auto;
     overflow: visible;
+    opacity: 1;
+    transform: none;
+    pointer-events: auto;
+  }
+
+  .signal-rail,
+  .focus-mode .signal-rail {
+    position: relative;
+    inset: auto;
+    height: auto;
+    opacity: 1;
+    transform: none;
+    pointer-events: auto;
+  }
+
+  .focus-mode .identity,
+  .focus-mode .power-control,
+  .focus-mode .model-title {
+    display: flex;
+  }
+
+  .focus-mode .spec-dock,
+  .focus-mode .layer-dock {
+    opacity: 1;
+    transform: none;
+    pointer-events: auto;
+  }
+
+  .focus-control {
+    display: none;
+  }
+
+  .focus-mode .assembly {
+    width: min(48vw, 560px);
   }
 
   .control-group {

@@ -120,6 +120,7 @@ export default function Home() {
   const [separation, setSeparation] = useState(85);
   const [powered, setPowered] = useState(true);
   const [renderMode, setRenderMode] = useState<RenderKey>("scene");
+  const [focusMode, setFocusMode] = useState(false);
   const drag = useRef<{ x: number; y: number; rx: number; ry: number } | null>(null);
 
   const size = sizes[sizeKey];
@@ -195,7 +196,7 @@ export default function Home() {
   );
 
   return (
-    <main className={`lab-app panel-${panel.toLowerCase()} render-${renderMode}${exploded ? " is-exploded" : ""}${powered ? "" : " power-off"}`} style={rootStyle}>
+    <main className={`lab-app panel-${panel.toLowerCase()} render-${renderMode}${exploded ? " is-exploded" : ""}${powered ? "" : " power-off"}${focusMode ? " focus-mode" : ""}`} style={rootStyle}>
       <header className="app-bar">
         <div className="identity">
           <span className="identity-mark" aria-hidden="true"><i /><i /><i /></span>
@@ -207,10 +208,15 @@ export default function Home() {
           <span><b>{resolution.width.toLocaleString()} × {resolution.height.toLocaleString()}</b> resolution</span>
           <span><b>{refresh} Hz</b> refresh</span>
         </div>
-        <button type="button" className={`power-control${powered ? " on" : ""}`} onClick={() => setPowered((value) => !value)} aria-pressed={powered} aria-label={`Turn monitor ${powered ? "off" : "on"}`}>
-          <span className="power-icon" aria-hidden="true"><i /></span>
-          <span><b>DISPLAY {powered ? "ON" : "OFF"}</b><small>Power</small></span>
-        </button>
+        <div className="header-actions">
+          <button type="button" className={`focus-control${focusMode ? " active" : ""}`} onClick={() => setFocusMode((value) => !value)} aria-pressed={focusMode}>
+            <span aria-hidden="true">{focusMode ? "⊡" : "⛶"}</span>{focusMode ? "Show panels" : "Focus view"}
+          </button>
+          <button type="button" className={`power-control${powered ? " on" : ""}`} onClick={() => setPowered((value) => !value)} aria-pressed={powered} aria-label={`Turn monitor ${powered ? "off" : "on"}`}>
+            <span className="power-icon" aria-hidden="true"><i /></span>
+            <span><b>DISPLAY {powered ? "ON" : "OFF"}</b><small>Power</small></span>
+          </button>
+        </div>
       </header>
 
       <div className="workspace">
