@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent } from "react";
 
 type SizeKey = "24" | "27" | "32" | "34uw";
 type PanelKey = "IPS" | "VA" | "OLED";
@@ -121,7 +121,22 @@ export default function Home() {
   const [powered, setPowered] = useState(true);
   const [renderMode, setRenderMode] = useState<RenderKey>("scene");
   const [focusMode, setFocusMode] = useState(false);
+  const [theme, setTheme] = useState<"light" | "dark">("light");
   const drag = useRef<{ x: number; y: number; rx: number; ry: number } | null>(null);
+
+  useEffect(() => {
+    const savedTheme = window.localStorage.getItem("monitor-xray-theme");
+    const nextTheme = savedTheme === "dark" ? "dark" : "light";
+    setTheme(nextTheme);
+    document.documentElement.dataset.theme = nextTheme;
+  }, []);
+
+  const toggleTheme = () => {
+    const nextTheme = theme === "light" ? "dark" : "light";
+    setTheme(nextTheme);
+    document.documentElement.dataset.theme = nextTheme;
+    window.localStorage.setItem("monitor-xray-theme", nextTheme);
+  };
 
   const size = sizes[sizeKey];
   const resolution = resolutionSets[sizeKey === "34uw" ? "ultrawide" : "wide"][resolutionKey];
@@ -200,7 +215,7 @@ export default function Home() {
       <header className="app-bar">
         <div className="identity">
           <span className="identity-mark" aria-hidden="true"><i /><i /><i /></span>
-          <div><strong>MONITOR / X-RAY</strong><small>Interactive display anatomy</small></div>
+          <div><strong>Monitor X-Ray</strong><small>Interactive display anatomy</small></div>
         </div>
         <div className="current-config" aria-label="Current monitor configuration">
           <span><b>{size.label}</b> size</span>
@@ -211,6 +226,9 @@ export default function Home() {
         <div className="header-actions">
           <button type="button" className={`focus-control${focusMode ? " active" : ""}`} onClick={() => setFocusMode((value) => !value)} aria-pressed={focusMode}>
             <span aria-hidden="true">{focusMode ? "⊡" : "⛶"}</span>{focusMode ? "Show panels" : "Focus view"}
+          </button>
+          <button type="button" className="theme-control" onClick={toggleTheme} aria-label={`Switch to ${theme === "light" ? "dark" : "light"} theme`}>
+            <span aria-hidden="true">{theme === "light" ? "☾" : "☀"}</span>{theme === "light" ? "Dark" : "Light"}
           </button>
           <button type="button" className={`power-control${powered ? " on" : ""}`} onClick={() => setPowered((value) => !value)} aria-pressed={powered} aria-label={`Turn monitor ${powered ? "off" : "on"}`}>
             <span className="power-icon" aria-hidden="true"><i /></span>
