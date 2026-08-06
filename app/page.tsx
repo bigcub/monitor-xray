@@ -7,6 +7,7 @@ type PanelKey = "IPS" | "VA" | "OLED";
 type ResolutionKey = "1080p" | "1440p" | "4K";
 type RefreshKey = 60 | 144 | 240;
 type LayerId = "glass" | "pixels" | "diffuser" | "backlight" | "electronics" | "housing";
+type RenderKey = "scene" | "pixels" | "motion" | "specs";
 
 const sizes: Record<SizeKey, { label: string; inches: number; ratio: [number, number] }> = {
   "24": { label: "24\"", inches: 24, ratio: [16, 9] },
@@ -88,6 +89,15 @@ const layerCopy: Record<LayerId, { name: string; short: string; lcd: string; ole
   },
 };
 
+const layerFacts: Record<LayerId, { builtFrom: string; inspect: string }> = {
+  glass: { builtFrom: "Coated glass, polarizer, adhesive films", inspect: "Glare control, clarity and viewing angle" },
+  pixels: { builtFrom: "TFT backplane, liquid crystal or OLED emitters", inspect: "Subpixel layout, response and pixel defects" },
+  diffuser: { builtFrom: "Reflector, diffuser and prism sheets", inspect: "Uniformity, hotspots and brightness loss" },
+  backlight: { builtFrom: "Edge LEDs, full-array LEDs or mini-LED zones", inspect: "Blooming, zone count and peak brightness" },
+  electronics: { builtFrom: "Scaler, T-CON and row/column drivers", inspect: "Signal timing, processing lag and inputs" },
+  housing: { builtFrom: "Metal chassis, power supply and rear shell", inspect: "Cooling, rigidity, ports and serviceability" },
+};
+
 const layers: Array<{ id: LayerId; label: string; depth: number; shift: number }> = [
   { id: "housing", label: "Rear shell", depth: -82, shift: -176 },
   { id: "electronics", label: "Drivers", depth: -64, shift: -116 },
@@ -107,6 +117,9 @@ export default function Home() {
   const [exploded, setExploded] = useState(true);
   const [selectedLayer, setSelectedLayer] = useState<LayerId>("backlight");
   const [rotation, setRotation] = useState({ x: -5, y: -18 });
+  const [separation, setSeparation] = useState(135);
+  const [powered, setPowered] = useState(true);
+  const [renderMode, setRenderMode] = useState<RenderKey>("scene");
   const drag = useRef<{ x: number; y: number; rx: number; ry: number } | null>(null);
 
   const size = sizes[sizeKey];
@@ -132,6 +145,7 @@ export default function Home() {
   const chooseLayer = (id: LayerId) => {
     setSelectedLayer(id);
     setExploded(true);
+    setSeparation((current) => Math.max(current, 145));
   };
 
   const onPointerDown = (event: PointerEvent<HTMLDivElement>) => {
@@ -181,7 +195,7 @@ export default function Home() {
   );
 
   return (
-    <main className={`lab-app panel-${panel.toLowerCase()}${exploded ? " is-exploded" : ""}`} style={rootStyle}>
+    <main className={`lab-app panel-${panel.toLowerCase()} render-${renderMode}${exploded ? " is-exploded" : ""}${powered ? "" : " power-off"}`} style={rootStyle}>
       <header className="app-bar">
         <div className="identity">
           <span className="identity-mark" aria-hidden="true"><i /><i /><i /></span>
@@ -193,7 +207,10 @@ export default function Home() {
           <span><b>{resolution.width.toLocaleString()} × {resolution.height.toLocaleString()}</b> resolution</span>
           <span><b>{refresh} Hz</b> refresh</span>
         </div>
-        <div className="status"><i /> LIVE MODEL</div>
+        <button type="button" className={`power-control${powered ? " on" : ""}`} onClick={() => setPowered((value) => !value)} aria-pressed={powered} aria-label={`Turn monitor ${powered ? "off" : "on"}`}>
+          <span className="power-icon" aria-hidden="true"><i /></span>
+          <span><b>DISPLAY {powered ? "ON" : "OFF"}</b><small>Power</small></span>
+        </button>
       </header>
 
       <div className="workspace">
@@ -216,6 +233,10 @@ export default function Home() {
             <div className="control-label"><span>Refresh rate</span><b>{refresh} frames / sec</b></div>
             {options([60, 144, 240] as const, refresh, setRefresh, (key) => `${key} Hz`)}
           </div>
+          <div className="control-group render-control">
+            <div className="control-label"><span>Screen feed</span><b>{powered ? renderMode : "Display off"}</b></div>
+            {options(["scene", "pixels", "motion", "specs"] as const, renderMode, setRenderMode, (key) => ({ scene: "Scene", pixels: "Test", motion: "Motion", specs: "Specs" })[key])}
+          </div>
 
           <div className="panel-insight">
             <div><span className="insight-dot" /> {panel} in one line</div>
@@ -226,6 +247,11 @@ export default function Home() {
         <section className="visualizer" aria-label="Interactive 3D monitor model">
           <div className="visualizer-toolbar">
             <div className="model-title"><span>02</span><div><strong>Modern display assembly</strong><small>Drag anywhere to orbit · select a layer to inspect</small></div></div>
+            <label className="spread-control">
+              <span>Layer spacing</span>
+              <input type="range" min="70" max="190" step="5" value={separation} onChange={(event) => { setSeparation(Number(event.target.value)); setExploded(true); }} aria-label="Layer separation" />
+              <b>{separation}%</b>
+            </label>
             <div className="view-actions">
               <button type="button" className={exploded ? "active" : ""} onClick={() => setExploded((value) => !value)} aria-pressed={exploded}>{exploded ? "Assemble" : "Explode"}</button>
               <button type="button" onClick={() => setRotation({ x: -5, y: -18 })}>Reset view</button>
@@ -254,11 +280,12 @@ export default function Home() {
               <div className="stand" aria-hidden="true"><span /><i /></div>
               {layers.map((layer) => {
                 const absent = panel === "OLED" && (layer.id === "backlight" || layer.id === "diffuser");
+                const spread = exploded ? separation / 100 : 0;
                 const layerStyle = {
                   "--layer-z": `${layer.depth}px`,
-                  "--layer-z-deep": `${layer.depth * 1.85}px`,
-                  "--layer-shift": `${layer.shift}px`,
-                  "--layer-mobile-shift": `${layer.shift * 0.48}px`,
+                  "--layer-z-deep": `${layer.depth * (1 + spread * 0.85)}px`,
+                  "--layer-shift": `${layer.shift * spread}px`,
+                  "--layer-mobile-shift": `${layer.shift * spread * 0.48}px`,
                 } as CSSProperties;
                 return (
                   <button
@@ -269,7 +296,16 @@ export default function Home() {
                     onClick={(event) => { event.stopPropagation(); chooseLayer(layer.id); }}
                     aria-label={`${layerCopy[layer.id].name}${absent ? ", removed in OLED" : ""}`}
                   >
-                    {layer.id === "pixels" && <span className="screen-image" aria-hidden="true"><span className="screen-orb" /><span className="screen-land" /><span className="screen-grid" /></span>}
+                    {layer.id === "pixels" && (
+                      <span className={`screen-image screen-${renderMode}`} aria-hidden="true">
+                        <span className="screen-off-state"><i /> DISPLAY OFF</span>
+                        {renderMode === "scene" && <><span className="screen-orb" /><span className="screen-land" /></>}
+                        {renderMode === "pixels" && <span className="test-pattern"><i /><i /><i /><i /><i /><i /><b /><b /></span>}
+                        {renderMode === "motion" && <span className="motion-demo"><span>{Array.from({ length: sampleCount }, (_, index) => <i key={index} style={{ left: `${(index / (sampleCount - 1)) * 100}%` }} />)}</span><b /></span>}
+                        {renderMode === "specs" && <span className="screen-specs"><small>LIVE SIGNAL</small><b>{resolutionSets[sizeKey === "34uw" ? "ultrawide" : "wide"][resolutionKey].label}</b><strong>{refresh} HZ</strong><i>{panel} · {size.label}</i></span>}
+                        <span className="screen-grid" />
+                      </span>
+                    )}
                     {layer.id === "electronics" && <span className="circuit-board" aria-hidden="true"><i /><i /><i /><b /><b /><b /></span>}
                     {layer.id === "backlight" && <span className="led-field" aria-hidden="true">{Array.from({ length: 60 }, (_, index) => <i key={index} />)}</span>}
                     {layer.id === "diffuser" && <span className="diffuser-lines" aria-hidden="true" />}
@@ -303,7 +339,11 @@ export default function Home() {
             <span>SELECTED · {panel}</span>
             <h2>{chosenLayer.name}</h2>
             <p>{panelDescription}</p>
-            <div className="detail-fact"><small>LIGHT PATH</small><b>{panelFacts[panel].light}</b></div>
+            <div className="detail-facts">
+              <div><small>BUILT FROM</small><b>{layerFacts[selectedLayer].builtFrom}</b></div>
+              <div><small>INSPECT FOR</small><b>{layerFacts[selectedLayer].inspect}</b></div>
+              <div><small>LIGHT PATH</small><b>{panelFacts[panel].light}</b></div>
+            </div>
           </article>
         </aside>
       </div>
