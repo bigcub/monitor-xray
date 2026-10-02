@@ -121,12 +121,12 @@ export default function Home() {
   const [powered, setPowered] = useState(true);
   const [renderMode, setRenderMode] = useState<RenderKey>("scene");
   const [focusMode, setFocusMode] = useState(false);
-  const [theme, setTheme] = useState<"light" | "dark">("light");
+  const [theme, setTheme] = useState<"light" | "dark">("dark");
   const drag = useRef<{ x: number; y: number; rx: number; ry: number } | null>(null);
 
   useEffect(() => {
     const savedTheme = window.localStorage.getItem("monitor-xray-theme");
-    const nextTheme = savedTheme === "dark" ? "dark" : "light";
+    const nextTheme = savedTheme === "light" ? "light" : "dark";
     setTheme(nextTheme);
     document.documentElement.dataset.theme = nextTheme;
   }, []);
@@ -217,164 +217,152 @@ export default function Home() {
           <span className="identity-mark" aria-hidden="true"><i /><i /><i /></span>
           <div><strong>Monitor X-Ray</strong><small>Interactive display anatomy</small></div>
         </div>
-        <div className="current-config" aria-label="Current monitor configuration">
-          <span><b>{size.label}</b> size</span>
-          <span><b>{panel}</b> panel</span>
-          <span><b>{resolution.width.toLocaleString()} × {resolution.height.toLocaleString()}</b> resolution</span>
-          <span><b>{refresh} Hz</b> refresh</span>
-        </div>
-        <div className="header-actions">
-          <button type="button" className={`focus-control${focusMode ? " active" : ""}`} onClick={() => setFocusMode((value) => !value)} aria-pressed={focusMode}>
-            <span aria-hidden="true">{focusMode ? "⊡" : "⛶"}</span>{focusMode ? "Show panels" : "Focus view"}
-          </button>
-          <button type="button" className="theme-control" onClick={toggleTheme} aria-label={`Switch to ${theme === "light" ? "dark" : "light"} theme`}>
-            <span aria-hidden="true">{theme === "light" ? "☾" : "☀"}</span>{theme === "light" ? "Dark" : "Light"}
-          </button>
-          <button type="button" className={`power-control${powered ? " on" : ""}`} onClick={() => setPowered((value) => !value)} aria-pressed={powered} aria-label={`Turn monitor ${powered ? "off" : "on"}`}>
-            <span className="power-icon" aria-hidden="true"><i /></span>
-            <span><b>DISPLAY {powered ? "ON" : "OFF"}</b><small>Power</small></span>
-          </button>
-        </div>
+        <button type="button" className="theme-control" onClick={toggleTheme} aria-label={`Switch to ${theme === "light" ? "dark" : "light"} theme`}>
+          <span aria-hidden="true">{theme === "light" ? "☾" : "☀"}</span>{theme === "light" ? "Dark" : "Light"}
+        </button>
       </header>
 
-      <div className="workspace">
-        <aside className="spec-dock glass-panel" aria-label="Configure the monitor">
-          <div className="dock-title"><span>01</span><div><strong>Build a monitor</strong><small>Every choice updates the model</small></div></div>
+      <aside className="spec-dock dock" aria-label="Configure the monitor">
+        <div className="dock-title"><strong>Build a monitor</strong><small>Every choice updates the model</small></div>
 
-          <div className="control-group">
-            <div className="control-label"><span>Size</span><b>{size.label} diagonal</b></div>
-            {options(Object.keys(sizes) as SizeKey[], sizeKey, setSizeKey, (key) => sizes[key].label)}
-          </div>
-          <div className="control-group">
-            <div className="control-label"><span>Panel type</span><b>{panel}</b></div>
-            {options(["IPS", "VA", "OLED"] as const, panel, setPanel)}
-          </div>
-          <div className="control-group">
-            <div className="control-label"><span>Resolution</span><b>{resolution.width.toLocaleString()} × {resolution.height.toLocaleString()}</b></div>
-            {options(["1080p", "1440p", "4K"] as const, resolutionKey, setResolutionKey, (key) => resolutionSets[sizeKey === "34uw" ? "ultrawide" : "wide"][key].label)}
-          </div>
-          <div className="control-group">
-            <div className="control-label"><span>Refresh rate</span><b>{refresh} frames / sec</b></div>
-            {options([60, 144, 240] as const, refresh, setRefresh, (key) => `${key} Hz`)}
-          </div>
-          <div className="control-group render-control">
-            <div className="control-label"><span>Screen feed</span><b>{powered ? renderMode : "Display off"}</b></div>
-            {options(["scene", "pixels", "motion", "specs"] as const, renderMode, setRenderMode, (key) => ({ scene: "Scene", pixels: "Test", motion: "Motion", specs: "Specs" })[key])}
-          </div>
+        <div className="control-group">
+          <div className="control-label"><span>Size</span><b>{size.label} diagonal</b></div>
+          {options(Object.keys(sizes) as SizeKey[], sizeKey, setSizeKey, (key) => sizes[key].label)}
+        </div>
+        <div className="control-group">
+          <div className="control-label"><span>Panel type</span><b>{panel}</b></div>
+          {options(["IPS", "VA", "OLED"] as const, panel, setPanel)}
+        </div>
+        <div className="control-group">
+          <div className="control-label"><span>Resolution</span><b>{resolution.width.toLocaleString()} × {resolution.height.toLocaleString()}</b></div>
+          {options(["1080p", "1440p", "4K"] as const, resolutionKey, setResolutionKey, (key) => resolutionSets[sizeKey === "34uw" ? "ultrawide" : "wide"][key].label)}
+        </div>
+        <div className="control-group">
+          <div className="control-label"><span>Refresh rate</span><b>{refresh} frames / sec</b></div>
+          {options([60, 144, 240] as const, refresh, setRefresh, (key) => `${key} Hz`)}
+        </div>
+        <div className="control-group">
+          <div className="control-label"><span>On screen</span><b>{powered ? ({ scene: "Scene", pixels: "Test pattern", motion: "Motion", specs: "Specs" })[renderMode] : "Display off"}</b></div>
+          {options(["scene", "pixels", "motion", "specs"] as const, renderMode, setRenderMode, (key) => ({ scene: "Scene", pixels: "Test", motion: "Motion", specs: "Specs" })[key])}
+        </div>
 
-          <div className="panel-insight">
-            <div><span className="insight-dot" /> {panel} in one line</div>
-            <p>{panelFacts[panel].summary}</p>
-          </div>
-        </aside>
-
-        <section className="visualizer" aria-label="Interactive 3D monitor model">
-          <div className="visualizer-toolbar">
-            <div className="model-title"><span>02</span><div><strong>Modern display assembly</strong><small>Drag anywhere to orbit · select a layer to inspect</small></div></div>
-            <label className="spread-control">
-              <span>Z-axis depth</span>
-              <input type="range" min="30" max="140" step="5" value={separation} onChange={(event) => { setSeparation(Number(event.target.value)); setExploded(true); }} aria-label="Layer depth separation along the Z axis" />
-              <b>{separation}px</b>
-            </label>
-            <div className="view-actions">
-              <button type="button" className={exploded ? "active" : ""} onClick={() => setExploded((value) => !value)} aria-pressed={exploded}>{exploded ? "Assemble" : "Explode"}</button>
-              <button type="button" onClick={() => setRotation({ x: -7, y: -32 })}>Reset view</button>
-            </div>
-          </div>
-
-          <div
-            className="scene"
-            role="application"
-            aria-label={`Rotatable exploded ${panel} monitor. Drag or use arrow keys to rotate.`}
-            onPointerDown={onPointerDown}
-            onPointerMove={onPointerMove}
-            onPointerUp={onPointerUp}
-            onPointerCancel={() => { drag.current = null; }}
-            onKeyDown={onKeyDown}
-            tabIndex={0}
-          >
-            <div className="ambient ambient-one" /><div className="ambient ambient-two" />
-
-            <div className="readout readout-size"><span>PHYSICAL CANVAS</span><strong>{format(calculations.widthCm)} × {format(calculations.heightCm)} cm</strong><i /></div>
-            <div className="readout readout-density"><span>PIXEL DENSITY</span><strong>{Math.round(calculations.ppi)} PPI · {calculations.megapixels.toFixed(1)}M pixels</strong><i /></div>
-            <div className="readout readout-light"><span>LIGHT ENGINE</span><strong>{panel === "OLED" ? "Self-emissive RGB" : "White LED + LCD"}</strong><i /></div>
-            <div className="readout readout-time"><span>FRAME WINDOW</span><strong>{calculations.frameTime.toFixed(2)} milliseconds</strong><i /></div>
-
-            <div className="assembly">
-              <div className="stand" aria-hidden="true"><span /><i /></div>
-              {layers.map((layer) => {
-                const absent = panel === "OLED" && (layer.id === "backlight" || layer.id === "diffuser");
-                const layerStyle = {
-                  "--layer-z": `${layer.plane * 7}px`,
-                  "--layer-z-deep": `${layer.plane * separation}px`,
-                } as CSSProperties;
-                return (
-                  <button
-                    type="button"
-                    key={layer.id}
-                    style={layerStyle}
-                    className={`monitor-layer layer-${layer.id}${selectedLayer === layer.id ? " selected" : ""}${absent ? " absent" : ""}`}
-                    onClick={(event) => { event.stopPropagation(); chooseLayer(layer.id); }}
-                    aria-label={`${layerCopy[layer.id].name}${absent ? ", removed in OLED" : ""}`}
-                  >
-                    {layer.id === "pixels" && (
-                      <span className={`screen-image screen-${renderMode}`} aria-hidden="true">
-                        <span className="screen-off-state"><i /> DISPLAY OFF</span>
-                        {renderMode === "scene" && <><span className="screen-orb" /><span className="screen-land" /></>}
-                        {renderMode === "pixels" && <span className="test-pattern"><i /><i /><i /><i /><i /><i /><b /><b /></span>}
-                        {renderMode === "motion" && <span className="motion-demo"><span>{Array.from({ length: sampleCount }, (_, index) => <i key={index} style={{ left: `${(index / (sampleCount - 1)) * 100}%` }} />)}</span><b /></span>}
-                        {renderMode === "specs" && <span className="screen-specs"><small>LIVE SIGNAL</small><b>{resolutionSets[sizeKey === "34uw" ? "ultrawide" : "wide"][resolutionKey].label}</b><strong>{refresh} HZ</strong><i>{panel} · {size.label}</i></span>}
-                        <span className="screen-grid" />
-                      </span>
-                    )}
-                    {layer.id === "electronics" && <span className="circuit-board" aria-hidden="true"><i /><i /><i /><b /><b /><b /></span>}
-                    {layer.id === "backlight" && <span className="led-field" aria-hidden="true">{Array.from({ length: 60 }, (_, index) => <i key={index} />)}</span>}
-                    {layer.id === "diffuser" && <span className="diffuser-lines" aria-hidden="true" />}
-                    {layer.id === "housing" && <span className="port-bank" aria-hidden="true"><i /><i /><i /><i /></span>}
-                    <span className="layer-tag"><b>{absent ? "REMOVED" : layer.label}</b><small>{layerCopy[layer.id].short}</small></span>
-                  </button>
-                );
-              })}
-            </div>
-
-            <div className="orbit-cue" aria-hidden="true"><span>↔</span> DRAG TO ORBIT</div>
-          </div>
+        <section className="spec-sheet" aria-label="Resulting specification">
+          <h3>What you get</h3>
+          <dl>
+            <div><dt>Screen area</dt><dd>{format(calculations.widthCm)} × {format(calculations.heightCm)} cm</dd></div>
+            <div><dt>Pixel density</dt><dd>{Math.round(calculations.ppi)} PPI · {calculations.megapixels.toFixed(1)} MP</dd></div>
+            <div><dt>Light source</dt><dd>{panel === "OLED" ? "Self-emissive RGB" : "White LED + LCD"}</dd></div>
+            <div><dt>Frame time</dt><dd>{calculations.frameTime.toFixed(2)} ms</dd></div>
+          </dl>
+          <p><b>{panel}</b> {panelFacts[panel].summary}</p>
         </section>
+      </aside>
 
-        <aside className="layer-dock glass-panel" aria-label="Monitor layer inspector">
-          <div className="dock-title"><span>03</span><div><strong>Inside the panel</strong><small>Select any hidden layer</small></div></div>
-          <div className="layer-list" role="list">
-            {layers.slice().reverse().map((layer, index) => {
+      <section className="stage" aria-label="Interactive 3D monitor model">
+        <div className="stage-toolbar">
+          <div className="segmented" role="group" aria-label="Assembly">
+            <button type="button" className={exploded ? "" : "active"} onClick={() => setExploded(false)} aria-pressed={!exploded}>Assembled</button>
+            <button type="button" className={exploded ? "active" : ""} onClick={() => setExploded(true)} aria-pressed={exploded}>Exploded</button>
+          </div>
+          <label className="spread-control">
+            <span>Layer gap</span>
+            <input type="range" min="30" max="140" step="5" value={separation} onChange={(event) => { setSeparation(Number(event.target.value)); setExploded(true); }} aria-label="Layer depth separation along the Z axis" />
+          </label>
+          <div className="toolbar-actions">
+            <button type="button" className={`tool-button power-control${powered ? " on" : ""}`} onClick={() => setPowered((value) => !value)} aria-pressed={powered} aria-label={`Turn monitor ${powered ? "off" : "on"}`}>
+              <span className="power-icon" aria-hidden="true"><i /></span>{powered ? "On" : "Off"}
+            </button>
+            <button type="button" className="tool-button" onClick={() => setRotation({ x: -7, y: -32 })}>Reset view</button>
+            <button type="button" className={`tool-button focus-control${focusMode ? " active" : ""}`} onClick={() => setFocusMode((value) => !value)} aria-pressed={focusMode}>
+              {focusMode ? "Show panels" : "Expand"}
+            </button>
+          </div>
+        </div>
+
+        <div
+          className="scene"
+          role="application"
+          aria-label={`Rotatable exploded ${panel} monitor. Drag or use arrow keys to rotate.`}
+          onPointerDown={onPointerDown}
+          onPointerMove={onPointerMove}
+          onPointerUp={onPointerUp}
+          onPointerCancel={() => { drag.current = null; }}
+          onKeyDown={onKeyDown}
+          tabIndex={0}
+        >
+          <div className="assembly">
+            <div className="stand" aria-hidden="true"><span /><i /></div>
+            {layers.map((layer) => {
               const absent = panel === "OLED" && (layer.id === "backlight" || layer.id === "diffuser");
+              const layerStyle = {
+                "--layer-z": `${layer.plane * 7}px`,
+                "--layer-z-deep": `calc(var(--assembly-w) * ${((layer.plane * separation) / 600).toFixed(4)})`,
+              } as CSSProperties;
               return (
-                <button type="button" role="listitem" key={layer.id} className={selectedLayer === layer.id ? "active" : ""} onClick={() => chooseLayer(layer.id)}>
-                  <span className={`layer-swatch swatch-${layer.id}`} />
-                  <span><b>{String(index + 1).padStart(2, "0")}</b>{layerCopy[layer.id].name}<small>{absent ? "Not present in OLED" : layerCopy[layer.id].short}</small></span>
-                  <i aria-hidden="true">↗</i>
+                <button
+                  type="button"
+                  key={layer.id}
+                  style={layerStyle}
+                  className={`monitor-layer layer-${layer.id}${selectedLayer === layer.id ? " selected" : ""}${absent ? " absent" : ""}`}
+                  onClick={(event) => { event.stopPropagation(); chooseLayer(layer.id); }}
+                  aria-label={`${layerCopy[layer.id].name}${absent ? ", removed in OLED" : ""}`}
+                >
+                  {layer.id === "pixels" && (
+                    <span className={`screen-image screen-${renderMode}`} aria-hidden="true">
+                      <span className="screen-off-state"><i /> DISPLAY OFF</span>
+                      {renderMode === "scene" && <><span className="screen-orb" /><span className="screen-land" /></>}
+                      {renderMode === "pixels" && <span className="test-pattern"><i /><i /><i /><i /><i /><i /><b /><b /></span>}
+                      {renderMode === "motion" && <span className="motion-demo"><span>{Array.from({ length: sampleCount }, (_, index) => <i key={index} style={{ left: `${(index / (sampleCount - 1)) * 100}%` }} />)}</span><b /></span>}
+                      {renderMode === "specs" && <span className="screen-specs"><small>LIVE SIGNAL</small><b>{resolution.label}</b><strong>{refresh} HZ</strong><i>{panel} · {size.label}</i></span>}
+                      <span className="screen-grid" />
+                    </span>
+                  )}
+                  {layer.id === "electronics" && <span className="circuit-board" aria-hidden="true"><i /><i /><i /><b /><b /><b /></span>}
+                  {layer.id === "backlight" && <span className="led-field" aria-hidden="true">{Array.from({ length: 60 }, (_, index) => <i key={index} />)}</span>}
+                  {layer.id === "diffuser" && <span className="diffuser-lines" aria-hidden="true" />}
+                  {layer.id === "housing" && <span className="port-bank" aria-hidden="true"><i /><i /><i /><i /></span>}
+                  <span className="layer-tag"><b>{absent ? "REMOVED" : layer.label}</b></span>
                 </button>
               );
             })}
           </div>
 
-          <article className="layer-detail" aria-live="polite">
-            <span>SELECTED · {panel}</span>
-            <h2>{chosenLayer.name}</h2>
-            <p>{panelDescription}</p>
-            <div className="detail-facts">
-              <div><small>BUILT FROM</small><b>{layerFacts[selectedLayer].builtFrom}</b></div>
-              <div><small>INSPECT FOR</small><b>{layerFacts[selectedLayer].inspect}</b></div>
-              <div><small>LIGHT PATH</small><b>{panelFacts[panel].light}</b></div>
-            </div>
-          </article>
-        </aside>
-      </div>
+          <div className="orbit-cue" aria-hidden="true">Drag to orbit · click a layer to inspect</div>
+        </div>
+      </section>
+
+      <aside className="layer-dock dock" aria-label="Monitor layer inspector">
+        <div className="dock-title"><strong>Inside the panel</strong><small>Front to back · select a layer</small></div>
+        <div className="layer-list" role="list">
+          {layers.slice().reverse().map((layer, index) => {
+            const absent = panel === "OLED" && (layer.id === "backlight" || layer.id === "diffuser");
+            return (
+              <button type="button" role="listitem" key={layer.id} className={`${selectedLayer === layer.id ? "active" : ""}${absent ? " absent" : ""}`} onClick={() => chooseLayer(layer.id)}>
+                <span className={`layer-swatch swatch-${layer.id}`} />
+                <span><b>{String(index + 1).padStart(2, "0")}</b>{layerCopy[layer.id].name}<small>{absent ? "Not present in OLED" : layerCopy[layer.id].short}</small></span>
+              </button>
+            );
+          })}
+        </div>
+
+        <article className="layer-detail" aria-live="polite">
+          <span>Selected · {panel}</span>
+          <h2>{chosenLayer.name}</h2>
+          <p>{panelDescription}</p>
+          <div className="detail-facts">
+            <div><small>Built from</small><b>{layerFacts[selectedLayer].builtFrom}</b></div>
+            <div><small>Inspect for</small><b>{layerFacts[selectedLayer].inspect}</b></div>
+            <div><small>Light path</small><b>{panelFacts[panel].light}</b></div>
+          </div>
+        </article>
+      </aside>
 
       <footer className="signal-rail" aria-label="How one frame reaches the display">
-        <div className="rail-intro"><span>04</span><div><strong>ONE FRAME, END TO END</strong><small>The whole monitor working together</small></div></div>
+        <strong className="rail-title">One frame, end to end</strong>
         <ol>
-          <li><span className="step-icon cable">DP</span><div><b>Signal in</b><small>GPU sends colour + brightness</small></div><i /></li>
-          <li><span className="step-icon chip">T</span><div><b>Timing control</b><small>Frame maps to every subpixel</small></div><i /></li>
-          <li><span className="step-icon light"><i /><i /><i /></span><div><b>{panel === "OLED" ? "Pixels emit" : "Light is shaped"}</b><small>{panel === "OLED" ? "RGB subpixels make light" : `${panel} gates the backlight`}</small></div><i /></li>
+          <li><span className="step-icon cable">DP</span><div><b>Signal in</b><small>GPU sends colour + brightness</small></div></li>
+          <li><span className="step-icon chip">T</span><div><b>Timing control</b><small>Frame maps to every subpixel</small></div></li>
+          <li><span className="step-icon light"><i /><i /><i /></span><div><b>{panel === "OLED" ? "Pixels emit" : "Light is shaped"}</b><small>{panel === "OLED" ? "RGB subpixels make light" : `${panel} gates the backlight`}</small></div></li>
           <li><span className="step-icon cadence">{Array.from({ length: sampleCount }, (_, index) => <i key={index} />)}</span><div><b>{refresh} Hz refresh</b><small>New frame every {calculations.frameTime.toFixed(2)} ms</small></div></li>
         </ol>
       </footer>
