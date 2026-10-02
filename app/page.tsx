@@ -107,6 +107,9 @@ const layers: Array<{ id: LayerId; label: string; plane: number }> = [
   { id: "glass", label: "Glass", plane: 2.5 },
 ];
 
+const MIN_ZOOM = 0.6;
+const MAX_ZOOM = 2.4;
+
 const format = (value: number) => new Intl.NumberFormat("en-GB", { maximumFractionDigits: 1 }).format(value);
 
 export default function Home() {
@@ -122,7 +125,53 @@ export default function Home() {
   const [renderMode, setRenderMode] = useState<RenderKey>("scene");
   const [focusMode, setFocusMode] = useState(false);
   const [theme, setTheme] = useState<"light" | "dark">("dark");
+  const [zoom, setZoom] = useState(1);
   const drag = useRef<{ x: number; y: number; rx: number; ry: number } | null>(null);
+  const pointers = useRef(new Map<number, { x: number; y: number }>());
+  const pinch = useRef<{ distance: number; zoom: number } | null>(null);
+  const zoomRef = useRef(zoom);
+  const sceneRef = useRef<HTMLDivElement>(null);
+
+  const applyZoom = (next: number) => {
+    const clamped = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, next));
+    zoomRef.current = clamped;
+    setZoom(clamped);
+  };
+
+  // Trackpad pinches arrive as ctrl+wheel (Chrome, Firefox) or gesture events (Safari).
+  // Both must be cancelled with non-passive native listeners or the browser zooms the whole page.
+  useEffect(() => {
+    const scene = sceneRef.current;
+    if (!scene) return;
+    let gestureBase = 1;
+
+    const onWheel = (event: WheelEvent) => {
+      const pageScrolls = document.documentElement.scrollHeight > window.innerHeight;
+      if (!event.ctrlKey && pageScrolls) return;
+      event.preventDefault();
+      const speed = event.ctrlKey ? 0.01 : 0.002;
+      applyZoom(zoomRef.current * Math.exp(-event.deltaY * speed));
+    };
+    const onGestureStart = (event: Event) => {
+      event.preventDefault();
+      gestureBase = zoomRef.current;
+    };
+    const onGestureChange = (event: Event) => {
+      event.preventDefault();
+      applyZoom(gestureBase * (event as Event & { scale: number }).scale);
+    };
+
+    scene.addEventListener("wheel", onWheel, { passive: false });
+    scene.addEventListener("gesturestart", onGestureStart);
+    scene.addEventListener("gesturechange", onGestureChange);
+    scene.addEventListener("gestureend", onGestureChange);
+    return () => {
+      scene.removeEventListener("wheel", onWheel);
+      scene.removeEventListener("gesturestart", onGestureStart);
+      scene.removeEventListener("gesturechange", onGestureChange);
+      scene.removeEventListener("gestureend", onGestureChange);
+    };
+  }, []);
 
   useEffect(() => {
     const savedTheme = window.localStorage.getItem("monitor-xray-theme");
@@ -164,12 +213,29 @@ export default function Home() {
     setSeparation((current) => Math.max(current, 95));
   };
 
+  const pointerDistance = () => {
+    const [a, b] = [...pointers.current.values()];
+    return Math.hypot(a.x - b.x, a.y - b.y);
+  };
+
   const onPointerDown = (event: PointerEvent<HTMLDivElement>) => {
-    drag.current = { x: event.clientX, y: event.clientY, rx: rotation.x, ry: rotation.y };
+    pointers.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
     event.currentTarget.setPointerCapture(event.pointerId);
+    if (pointers.current.size === 2) {
+      // Second finger down: switch from orbiting to pinch-zooming.
+      drag.current = null;
+      pinch.current = { distance: pointerDistance(), zoom: zoomRef.current };
+    } else if (pointers.current.size === 1) {
+      drag.current = { x: event.clientX, y: event.clientY, rx: rotation.x, ry: rotation.y };
+    }
   };
 
   const onPointerMove = (event: PointerEvent<HTMLDivElement>) => {
+    if (pointers.current.has(event.pointerId)) pointers.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
+    if (pinch.current && pointers.current.size === 2) {
+      applyZoom(pinch.current.zoom * (pointerDistance() / pinch.current.distance));
+      return;
+    }
     if (!drag.current) return;
     setRotation({
       x: Math.max(-26, Math.min(20, drag.current.rx - (event.clientY - drag.current.y) * 0.12)),
@@ -178,8 +244,15 @@ export default function Home() {
   };
 
   const onPointerUp = (event: PointerEvent<HTMLDivElement>) => {
+    pointers.current.delete(event.pointerId);
+    if (pointers.current.size < 2) pinch.current = null;
     drag.current = null;
-    event.currentTarget.releasePointerCapture(event.pointerId);
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
+  };
+
+  const resetView = () => {
+    setRotation({ x: -7, y: -32 });
+    applyZoom(1);
   };
 
   const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
@@ -188,6 +261,8 @@ export default function Home() {
     else if (event.key === "ArrowRight") setRotation((current) => ({ ...current, y: current.y + delta }));
     else if (event.key === "ArrowUp") setRotation((current) => ({ ...current, x: Math.max(-26, current.x - delta) }));
     else if (event.key === "ArrowDown") setRotation((current) => ({ ...current, x: Math.min(20, current.x + delta) }));
+    else if (event.key === "+" || event.key === "=") applyZoom(zoomRef.current * 1.15);
+    else if (event.key === "-") applyZoom(zoomRef.current / 1.15);
     else return;
     event.preventDefault();
   };
@@ -198,6 +273,7 @@ export default function Home() {
     "--pixel-step": resolutionKey === "1080p" ? "15px" : resolutionKey === "1440p" ? "10px" : "6px",
     "--rot-x": `${rotation.x}deg`,
     "--rot-y": `${rotation.y}deg`,
+    "--zoom": zoom,
   } as CSSProperties;
 
   const options = <T extends string | number>(items: readonly T[], value: T, setter: (value: T) => void, labels?: (item: T) => string) => (
@@ -272,7 +348,7 @@ export default function Home() {
             <button type="button" className={`tool-button power-control${powered ? " on" : ""}`} onClick={() => setPowered((value) => !value)} aria-pressed={powered} aria-label={`Turn monitor ${powered ? "off" : "on"}`}>
               <span className="power-icon" aria-hidden="true"><i /></span>{powered ? "On" : "Off"}
             </button>
-            <button type="button" className="tool-button" onClick={() => setRotation({ x: -7, y: -32 })}>Reset view</button>
+            <button type="button" className="tool-button" onClick={resetView}>Reset view</button>
             <button type="button" className={`tool-button focus-control${focusMode ? " active" : ""}`} onClick={() => setFocusMode((value) => !value)} aria-pressed={focusMode}>
               {focusMode ? "Show panels" : "Expand"}
             </button>
@@ -280,13 +356,14 @@ export default function Home() {
         </div>
 
         <div
+          ref={sceneRef}
           className="scene"
           role="application"
-          aria-label={`Rotatable exploded ${panel} monitor. Drag or use arrow keys to rotate.`}
+          aria-label={`Rotatable exploded ${panel} monitor. Drag or use arrow keys to rotate, pinch or plus and minus to zoom.`}
           onPointerDown={onPointerDown}
           onPointerMove={onPointerMove}
           onPointerUp={onPointerUp}
-          onPointerCancel={() => { drag.current = null; }}
+          onPointerCancel={onPointerUp}
           onKeyDown={onKeyDown}
           tabIndex={0}
         >
@@ -327,7 +404,7 @@ export default function Home() {
             })}
           </div>
 
-          <div className="orbit-cue" aria-hidden="true">Drag to orbit · click a layer to inspect</div>
+          <div className="orbit-cue" aria-hidden="true">Drag to orbit · pinch to zoom · click a layer to inspect</div>
         </div>
       </section>
 

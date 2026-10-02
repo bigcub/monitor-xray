@@ -631,7 +631,7 @@ input:focus-visible,
   left: 50%;
   width: var(--assembly-w);
   aspect-ratio: var(--screen-ratio);
-  transform: translate(-50%, -50%) rotateX(var(--rot-x)) rotateY(var(--rot-y)) scale(var(--screen-scale));
+  transform: translate(-50%, -50%) rotateX(var(--rot-x)) rotateY(var(--rot-y)) scale(calc(var(--screen-scale) * var(--zoom, 1)));
   transform-style: preserve-3d;
   transition: transform 0.12s ease;
 }
