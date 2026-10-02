@@ -1,4 +1,10 @@
-# vinext-starter
+# Monitor X-Ray
+
+Interactive 3D monitor anatomy with Meadow styling. Inspect hidden layers, compare panel types, resolution, size and refresh rate, and experiment with power and screen feeds.
+
+GitHub Pages is configured for **https://monitor.dej.app/**. See [hosting and DNS setup](docs/github-pages.md). Build the static version with `npm run build:pages`.
+
+## Original Sites development setup
 
 A clean full-stack starter running on
 [vinext](https://github.com/cloudflare/vinext), with optional Cloudflare D1 and
